@@ -893,6 +893,7 @@ static void fuse_send_readpages(struct fuse_io_args *ia, struct file *file)
 	ap->args.page_zeroing = true;
 	ap->args.page_replace = true;
 
+	/* (iluoeli): 以页为基本单位读取 */
 	/* Don't overflow end offset */
 	if (pos + (count - 1) == LLONG_MAX) {
 		count--;
@@ -1570,6 +1571,10 @@ static ssize_t fuse_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 	if (is_bad_inode(file_inode(file)))
 		return -EIO;
 
+	/**
+	 * 如果没有主动设置`direct_io`，则默认是开启kernel_cache的
+	 * 但是`auto_cache`似乎就没发挥作用啊？因为它又不会改变direct_io位
+	 */
 	if (!(ff->open_flags & FOPEN_DIRECT_IO))
 		return fuse_cache_read_iter(iocb, to);
 	else

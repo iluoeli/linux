@@ -33,6 +33,7 @@
 #include <linux/user_namespace.h>
 
 /** Default max number of pages that can be used in a single read request */
+/** (iluoeli): FUSE每个请求最多能够读取32个page */
 #define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
 
 /** Maximum of max_pages received in init_out */

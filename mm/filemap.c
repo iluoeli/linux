@@ -1990,6 +1990,8 @@ static void shrink_readahead_size_eio(struct file_ra_state *ra)
  * Return:
  * * total number of bytes copied, including those the were already @written
  * * negative error code if nothing was copied
+ * 
+ * (iluoeli): kernel_cache下走到这里(direct_io走另外路径)
  */
 static ssize_t generic_file_buffered_read(struct kiocb *iocb,
 		struct iov_iter *iter, ssize_t written)
@@ -1997,7 +1999,7 @@ static ssize_t generic_file_buffered_read(struct kiocb *iocb,
 	struct file *filp = iocb->ki_filp;
 	struct address_space *mapping = filp->f_mapping;
 	struct inode *inode = mapping->host;
-	struct file_ra_state *ra = &filp->f_ra;
+	struct file_ra_state *ra = &filp->f_ra; 
 	loff_t *ppos = &iocb->ki_pos;
 	pgoff_t index;
 	pgoff_t last_index;
@@ -2010,6 +2012,10 @@ static ssize_t generic_file_buffered_read(struct kiocb *iocb,
 		return 0;
 	iov_iter_truncate(iter, inode->i_sb->s_maxbytes);
 
+	/**
+	 * (iluoeli): 计算要读取的是哪些page
+	 * ra记录了readahead信息
+	 */
 	index = *ppos >> PAGE_SHIFT;
 	prev_index = ra->prev_pos >> PAGE_SHIFT;
 	prev_offset = ra->prev_pos & (PAGE_SIZE-1);
@@ -2029,6 +2035,10 @@ find_page:
 			goto out;
 		}
 
+		/**
+		 * (iluoeli): 寻找page
+		 * 若不在cache中，进行预读page_cache_sync_readahead()
+		 */
 		page = find_get_page(mapping, index);
 		if (!page) {
 			if (iocb->ki_flags & IOCB_NOWAIT)
